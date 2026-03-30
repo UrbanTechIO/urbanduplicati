@@ -1,0 +1,36 @@
+{
+  "name": "urbanduplicati",
+  "version": "1.0.0",
+  "description": "UrbanDuplicati Nextcloud app",
+  "scripts": {
+    "build": "NODE_OPTIONS=--max_old_space_size=1024 webpack --node-env production --progress",
+    "dev":   "webpack --node-env development --progress",
+    "watch": "webpack --node-env development --progress --watch"
+  },
+  "browserslist": ["extends @nextcloud/browserslist-config"],
+  "dependencies": {
+    "@nextcloud/auth":          "^2.4.0",
+    "@nextcloud/axios":         "^2.5.1",
+    "@nextcloud/dialogs":       "^5.3.7",
+    "@nextcloud/event-bus":     "^3.3.1",
+    "@nextcloud/initial-state": "^2.2.0",
+    "@nextcloud/l10n":          "^3.1.0",
+    "@nextcloud/router":        "^3.0.1",
+    "@nextcloud/vue":           "^8.19.0",
+    "vue":                      "^2.7.14",
+    "vue-material-design-icons":"^5.3.1",
+    "vue-router":               "^3.5.3",
+    "vuex":                     "^3.6.2",
+    "vuex-router-sync":         "^5.0.0"
+  },
+  "devDependencies": {
+    "@nextcloud/babel-config":        "^1.2.0",
+    "@nextcloud/browserslist-config": "^3.0.1",
+    "@nextcloud/eslint-config":       "^8.4.1",
+    "@nextcloud/webpack-vue-config":  "^6.1.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm":  "^10.0.0"
+  }
+}

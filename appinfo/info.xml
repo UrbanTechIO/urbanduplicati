@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+  <id>urbanduplicati</id>
+  <name>Dupli</name>
+  <summary>Duplicate media finder</summary>
+  <description>Find and remove duplicate photos and videos in your Nextcloud.</description>
+  <version>1.1.0</version>
+  <licence>agpl</licence>
+  <author>UrbanStorage</author>
+  <namespace>UrbanDuplicati</namespace>
+  <category>tools</category>
+  <dependencies><nextcloud min-version="25" max-version="32"/></dependencies>
+  <navigations><navigation><name>Dupli</name><route>urbanduplicati.page.index</route><order>98</order></navigation></navigations>
+  <settings><admin>OCA\\UrbanDuplicati\\Settings\\Admin</admin></settings>
+</info>

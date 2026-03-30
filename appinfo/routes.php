@@ -1,0 +1,27 @@
+<?php
+return [
+  'routes' => [
+    ['name' => 'page#index',      'url' => '/',                                              'verb' => 'GET'],
+    ['name' => 'page#admin',      'url' => '/admin',                                         'verb' => 'GET'],
+    ['name' => 'task#index',      'url' => '/api/v1/tasks',                                  'verb' => 'GET'],
+    ['name' => 'task#run',        'url' => '/api/v1/tasks/run',                              'verb' => 'POST'],
+    ['name' => 'task#show',       'url' => '/api/v1/tasks/{id}',                             'verb' => 'GET'],
+    ['name' => 'task#destroy',    'url' => '/api/v1/tasks/{id}',                             'verb' => 'DELETE'],
+    ['name' => 'task#terminate',  'url' => '/api/v1/tasks/{id}/terminate',                   'verb' => 'POST'],
+    ['name' => 'task#groups',     'url' => '/api/v1/tasks/{id}/groups',                      'verb' => 'GET'],
+    ['name' => 'task#deleteFile', 'url' => '/api/v1/tasks/{id}/groups/{groupId}/files/{fileId}', 'verb' => 'DELETE'],
+    ['name' => 'task#bulkDelete', 'url' => '/api/v1/tasks/{id}/bulk-delete',                 'verb' => 'POST'],
+    ['name' => 'task#bulkRemove', 'url' => '/api/v1/tasks/{id}/bulk-remove',                 'verb' => 'POST'],
+    ['name' => 'task#dryRun',     'url' => '/api/v1/tasks/{id}/dry-run',                     'verb' => 'POST'],
+    ['name' => 'task#allGroupIds', 'url' => '/api/v1/tasks/{id}/all-group-ids', 'verb' => 'GET'],
+    ['name' => 'protection#index',   'url' => '/api/v1/protection',      'verb' => 'GET'],
+    ['name' => 'protection#create',  'url' => '/api/v1/protection',      'verb' => 'POST'],
+    ['name' => 'task#allGroupIds', 'url' => '/api/v1/tasks/{id}/all-group-ids', 'verb' => 'GET'],
+    ['name' => 'protection#destroy', 'url' => '/api/v1/protection/{id}', 'verb' => 'DELETE'],
+    ['name' => 'audit#index',  'url' => '/api/v1/audit',        'verb' => 'GET'],
+    ['name' => 'audit#export', 'url' => '/api/v1/audit/export', 'verb' => 'GET'],
+    ['name' => 'settings#index',  'url' => '/api/v1/settings',        'verb' => 'GET'],
+    ['name' => 'settings#update', 'url' => '/api/v1/settings',        'verb' => 'PUT'],
+    ['name' => 'settings#system', 'url' => '/api/v1/settings/system', 'verb' => 'GET'],
+  ],
+];
