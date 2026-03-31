@@ -23,5 +23,6 @@ return [
     ['name' => 'settings#index',  'url' => '/api/v1/settings',        'verb' => 'GET'],
     ['name' => 'settings#update', 'url' => '/api/v1/settings',        'verb' => 'PUT'],
     ['name' => 'settings#system', 'url' => '/api/v1/settings/system', 'verb' => 'GET'],
+    ['name' => 'notification#scanFinished', 'url' => '/api/v1/notify/{taskId}', 'verb' => 'POST'],
   ],
 ];

@@ -4,6 +4,8 @@ Writes results to oc_ud_groups and oc_ud_group_files.
 """
 import os
 import time
+import urllib.request
+import urllib.parse
 import logging
 from PIL import Image, ImageOps
 import imagehash
@@ -308,6 +310,20 @@ def run_task(task_id: int):
             (int(time.time()), len(files), task_id)
         )
         log.info('Task %d completed successfully', task_id)
+
+        # Send Nextcloud notification if enabled
+        try:
+            secret = db.get_app_value('urbanduplicati', 'internal_secret', '')
+            base_url = db.get_config().get('base_url', 'http://localhost')
+            if secret:
+                url = base_url.rstrip('/') + '/index.php/apps/urbanduplicati/api/v1/notify/' + str(task_id)
+                data = urllib.parse.urlencode({'secret': secret}).encode()
+                req = urllib.request.Request(url, data=data, method='POST')
+                req.add_header('OCS-APIREQUEST', 'true')
+                urllib.request.urlopen(req, timeout=10)
+                log.info('Notification sent for task %d', task_id)
+        except Exception as ne:
+            log.warning('Could not send notification for task %d: %s', task_id, ne)
 
     except Exception as e:
         log.exception('Task %d failed: %s', task_id, e)

@@ -29,12 +29,13 @@ def _parse_config():
         return None
 
     return {
-        'host':    get_value('dbhost') or 'localhost',
-        'db':      get_value('dbname') or 'nextcloud',
-        'user':    get_value('dbuser') or 'nextcloud',
-        'passwd':  get_value('dbpassword') or '',
-        'prefix':  get_value('dbtableprefix') or 'oc_',
-        'datadir': get_value('datadirectory') or '/var/www/html/data',
+        'host':     get_value('dbhost') or 'localhost',
+        'db':       get_value('dbname') or 'nextcloud',
+        'user':     get_value('dbuser') or 'nextcloud',
+        'passwd':   get_value('dbpassword') or '',
+        'prefix':   get_value('dbtableprefix') or 'oc_',
+        'datadir':  get_value('datadirectory') or '/var/www/html/data',
+        'base_url': get_value('overwrite.cli.url') or 'http://localhost',
     }
 
 
@@ -44,6 +45,20 @@ def get_config():
         _config = _parse_config()
     return _config
 
+
+def get_app_value(app, key, default=''):
+    """Fetch a value from oc_appconfig (Nextcloud app settings)."""
+    try:
+        conn = get_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT configvalue FROM oc_appconfig WHERE appid = %s AND configkey = %s',
+                (app, key)
+            )
+            row = cur.fetchone()
+            return row['configvalue'] if row else default
+    except Exception:
+        return default
 
 def get_connection():
     global _conn
