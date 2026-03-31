@@ -2,7 +2,14 @@
 
 Dupli scans your Nextcloud media library and finds duplicate photos and videos using perceptual hashing.
 
-![Description](img/Screenshot 2026-03-31 113313.png)
+![Screenshot 113313](./img/Screenshot%202026-03-31%20113313.png)
+![Screenshot 113333](./img/Screenshot%202026-03-31%20113333.png)
+![Screenshot 113352](./img/Screenshot%202026-03-31%20113352.png)
+![Screenshot 113406](./img/Screenshot%202026-03-31%20113406.png)
+![Screenshot 165120](./img/Screenshot%202026-03-31%20165120.png)
+![Screenshot 165145](./img/Screenshot%202026-03-31%20165145.png)
+![Screenshot 165219](./img/Screenshot%202026-03-31%20165219.png)
+
 
 ## Features
 - Perceptual hash detection (dHash, pHash, wHash)
