@@ -230,7 +230,7 @@ class TaskController extends Controller {
             // Annotate each file with protection status and filter match
             foreach ($files as &$file) {
                 $file['protected'] = $this->isProtected($file, $rules);
-                $file['filter_match'] = !empty($filter) ? fnmatch($filter, $file['filename']) : false;
+                $file['filter_match'] = !empty($filter) ? (stripos($file['filename'], $filter) !== false || fnmatch($filter, $file['filename'])) : false;
             }
             $group['files'] = $files;
 
@@ -270,6 +270,33 @@ class TaskController extends Controller {
             [$id, $this->uid()]
         );
         if (!$row) return new JSONResponse(['error' => 'Not found'], 404);
+
+        $filter = $this->request->getParam('filter', '');
+
+        if (!empty($filter)) {
+            // Return only groups that have at least one file matching the filter
+            $allGroups = $this->db->fetchAll(
+                'SELECT DISTINCT g.group_id FROM oc_ud_groups g
+                 JOIN oc_ud_group_files f ON f.group_id = g.group_id AND f.task_id = g.task_id
+                 WHERE g.task_id = ? ORDER BY g.group_id',
+                [$id]
+            );
+            $rules = $this->getProtectionRules();
+            $matchingGroups = [];
+            foreach ($allGroups as $group) {
+                $files = $this->db->fetchAll(
+                    'SELECT filename FROM oc_ud_group_files WHERE task_id = ? AND group_id = ?',
+                    [$id, $group['group_id']]
+                );
+                foreach ($files as $file) {
+                    if (stripos($file['filename'], $filter) !== false || fnmatch($filter, $file['filename'])) {
+                        $matchingGroups[] = $group['group_id'];
+                        break;
+                    }
+                }
+            }
+            return new JSONResponse(['group_ids' => $matchingGroups]);
+        }
 
         $rows = $this->db->fetchAll(
             'SELECT DISTINCT group_id FROM oc_ud_groups WHERE task_id = ? ORDER BY group_id',
@@ -334,9 +361,9 @@ class TaskController extends Controller {
      */
     public function bulkDelete(int $id): JSONResponse {
         try {
-        $groupIds = $this->request->getParam('group_ids', []);
+        $raw = $this->request->getParam('group_ids', '[]'); $groupIds = is_array($raw) ? $raw : (json_decode($raw, true) ?? []);
         // Optional: list of group IDs where user chose to also delete protected duplicates (keep one)
-        $deleteProtectedFor = $this->request->getParam('delete_protected_for', []);
+        $rawProt = $this->request->getParam('delete_protected_for', '[]'); $deleteProtectedFor = is_array($rawProt) ? $rawProt : (json_decode($rawProt, true) ?? []);
         $deleteUnprotectedKeepOne = (bool)$this->request->getParam('delete_unprotected_keep_one', false);
         $keepFromFolder = (string)$this->request->getParam('keep_from_folder', '');
         $filterPattern = (string)$this->request->getParam('filter_pattern', '');
@@ -362,49 +389,81 @@ class TaskController extends Controller {
             $protected   = array_values(array_filter($files, fn($f) => $this->isProtected($f, $rules)));
             $unprotected = array_values(array_filter($files, fn($f) => !$this->isProtected($f, $rules)));
 
-               // 1. Determine files to delete based on filter or default logic
-            if (!empty($filterPattern)) {
-                // Filter mode: delete files matching the glob pattern (skip protected unless keepFromFolder set)
-                $toDelete = array_values(array_filter($files, function($f) use ($filterPattern, $rules) {
-                    if ($this->isProtected($f, $rules)) return false; // respect protection by default
-                    return fnmatch($filterPattern, $f['filename']);
-                }));
-            } else {
-                // Default: delete all unprotected files
-                $toDelete = $unprotected;
-            }
+            $hasFilter     = !empty($filterPattern);
+            $hasKeepFolder = $deleteUnprotectedKeepOne && !empty($keepFromFolder);
+            $groupOptedIn  = in_array((string)$gid, array_map('strval', $deleteProtectedFor));
 
-            // 2. Per-group opt-in: delete protected duplicates, keep first
-            if (in_array((string)$gid, array_map('strval', $deleteProtectedFor)) && count($protected) >= 2) {
-                $toDelete = array_merge($toDelete, array_slice($protected, 1));
-            }
+            $matchesFilter = function($f) use ($filterPattern) {
+                return stripos($f['filename'], $filterPattern) !== false
+                    || fnmatch($filterPattern, $f['filename']);
+            };
 
-            // 3. Global keep-from-folder: keep files from chosen folder, delete all others
-            if ($deleteUnprotectedKeepOne && !empty($keepFromFolder)) {
+            $resolvedKeep = [];
+            if ($hasKeepFolder) {
                 $mounts = [];
-                try { $mounts = $this->db->fetchAll('SELECT mount_point FROM oc_external_mounts'); } catch (\Exception $e) {}
-                $mountPoints = array_map(fn($m) => rtrim($m['mount_point'], '/'), $mounts);
+                try { $mounts = $this->db->fetchAll('SELECT mount_point FROM oc_external_mounts'); } catch (Exception $e) {}
+                $mountPoints  = array_map(fn($m) => rtrim($m['mount_point'], '/'), $mounts);
                 $resolvedKeep = $this->resolveProtectionPath($keepFromFolder, $mountPoints);
-
-                $allFiles = array_merge($unprotected, $protected);
-                $inKeep = array_values(array_filter($allFiles, function($f) use ($resolvedKeep) {
-                    $fp = $f['filepath'] ?? '';
-                    foreach ($resolvedKeep as $rp) {
-                        $rp = rtrim($rp, '/');
-                        if ($fp === $rp || strpos($fp, $rp . '/') === 0) return true;
-                    }
-                    return false;
-                }));
-                $notInKeep = array_values(array_filter($allFiles, function($f) use ($resolvedKeep) {
-                    $fp = $f['filepath'] ?? '';
-                    foreach ($resolvedKeep as $rp) {
-                        $rp = rtrim($rp, '/');
-                        if ($fp === $rp || strpos($fp, $rp . '/') === 0) return false;
-                    }
-                    return true;
-                }));
-                $toDelete = array_merge($notInKeep, array_slice($inKeep, 1));
             }
+            $inKeepFolder = function($f) use ($resolvedKeep) {
+                $fp = $f['filepath'] ?? '';
+                foreach ($resolvedKeep as $rp) {
+                    $rp = rtrim($rp, '/');
+                    if ($fp === $rp || strpos($fp, $rp . '/') === 0) return true;
+                }
+                return false;
+            };
+
+            $toDelete = [];
+
+            // === UNPROTECTED FILES ===
+            if ($hasFilter) {
+                foreach ($unprotected as $f) {
+                    if ($matchesFilter($f)) $toDelete[] = $f;
+                }
+            } elseif ($hasKeepFolder) {
+                $unprotInKeep    = array_values(array_filter($unprotected, $inKeepFolder));
+                $unprotNotInKeep = array_values(array_filter($unprotected, fn($f) => !$inKeepFolder($f)));
+                foreach ($unprotNotInKeep as $f) $toDelete[] = $f;
+                foreach (array_slice($unprotInKeep, 1) as $f) $toDelete[] = $f;
+            } else {
+                foreach ($unprotected as $f) $toDelete[] = $f;
+            }
+
+            // === PROTECTED FILES (only if user opted in for this group) ===
+            if ($groupOptedIn && count($protected) >= 1) {
+                if ($hasFilter && $hasKeepFolder) {
+                    // Delete protected matching filter; from remainder keep one (prefer keep folder)
+                    $filterMatched    = array_values(array_filter($protected, $matchesFilter));
+                    $filterNotMatched = array_values(array_filter($protected, fn($f) => !$matchesFilter($f)));
+                    foreach ($filterMatched as $f) $toDelete[] = $f;
+                    $remainInKeep    = array_values(array_filter($filterNotMatched, $inKeepFolder));
+                    $remainNotInKeep = array_values(array_filter($filterNotMatched, fn($f) => !$inKeepFolder($f)));
+                    if (count($remainInKeep) > 0) {
+                        foreach (array_slice($remainInKeep, 1) as $f) $toDelete[] = $f;
+                        foreach ($remainNotInKeep as $f) $toDelete[] = $f;
+                    } else {
+                        foreach (array_slice($filterNotMatched, 1) as $f) $toDelete[] = $f;
+                    }
+                } elseif ($hasFilter) {
+                    foreach ($protected as $f) {
+                        if ($matchesFilter($f)) $toDelete[] = $f;
+                    }
+                } elseif ($hasKeepFolder) {
+                    $protInKeep    = array_values(array_filter($protected, $inKeepFolder));
+                    $protNotInKeep = array_values(array_filter($protected, fn($f) => !$inKeepFolder($f)));
+                    foreach ($protNotInKeep as $f) $toDelete[] = $f;
+                    foreach (array_slice($protInKeep, 1) as $f) $toDelete[] = $f;
+                } else {
+                    foreach (array_slice($protected, 1) as $f) $toDelete[] = $f;
+                }
+            }
+
+            // FINAL SAFETY GATE: never delete protected unless user opted in
+            $toDelete = array_values(array_filter($toDelete, function($f) use ($rules, $groupOptedIn) {
+                if (!$this->isProtected($f, $rules)) return true;
+                return $groupOptedIn;
+            }));
 
             foreach ($toDelete as $file) {
                 try {
@@ -442,7 +501,7 @@ class TaskController extends Controller {
      * @NoAdminRequired
      */
     public function bulkRemove(int $id): JSONResponse {
-        $groupIds = $this->request->getParam('group_ids', []);
+        $raw = $this->request->getParam('group_ids', '[]'); $groupIds = is_array($raw) ? $raw : (json_decode($raw, true) ?? []);
         if (empty($groupIds)) return new JSONResponse(['error' => 'No groups'], 400);
         foreach ($groupIds as $gid) {
             $this->db->execute('DELETE FROM oc_ud_group_files WHERE task_id = ? AND group_id = ?', [$id, $gid]);
@@ -455,8 +514,8 @@ class TaskController extends Controller {
      * @NoAdminRequired
      */
     public function dryRun(int $id): JSONResponse {
-        $groupIds = $this->request->getParam('group_ids', []);
-        $deleteProtectedFor = $this->request->getParam('delete_protected_for', []);
+        $raw = $this->request->getParam('group_ids', '[]'); $groupIds = is_array($raw) ? $raw : (json_decode($raw, true) ?? []);
+        $rawProt = $this->request->getParam('delete_protected_for', '[]'); $deleteProtectedFor = is_array($rawProt) ? $rawProt : (json_decode($rawProt, true) ?? []);
 
         $task = $this->db->fetchOne(
             'SELECT id FROM oc_ud_tasks WHERE id = ? AND user_id = ?',

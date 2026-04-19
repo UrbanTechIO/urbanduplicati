@@ -298,7 +298,7 @@ export default {
 
     async selectAllPages() {
       try {
-        const res = await axios.get(generateUrl(`/apps/urbanduplicati/api/v1/tasks/${this.id}/all-group-ids`))
+        const res = await axios.get(generateUrl(`/apps/urbanduplicati/api/v1/tasks/${this.id}/all-group-ids`) + (this.activeFilter ? `?filter=${encodeURIComponent(this.activeFilter)}` : ''))
         this.allSelectedIds = res.data.group_ids || []
         this.allGroupsSelected = true
         this.$store.commit('clearSelection')
@@ -364,10 +364,15 @@ export default {
       this.deleteResult = null
       try {
         console.log('bulkDelete groupIds:', this.activeGroupIds, 'length:', this.activeGroupIds.length)
+        // When global keep-from-folder is active, treat ALL groups as opted-in for protected deletion
+        const effectiveDeleteProtectedFor = this.deleteUnprotectedAndKeepOne && this.keepFromFolder
+          ? this.activeGroupIds
+          : this.deleteProtectedFor
+
         const res = await this.$store.dispatch('bulkDelete', {
           taskId: this.id,
           groupIds: this.activeGroupIds,
-          deleteProtectedFor: this.deleteProtectedFor,
+          deleteProtectedFor: effectiveDeleteProtectedFor,
           deleteUnprotectedAndKeepOne: this.deleteUnprotectedAndKeepOne,
           keepFromFolder: this.keepFromFolder,
           filterPattern: this.activeFilter,

@@ -1,0 +1,4 @@
+Pillow
+imagehash
+PyMySQL
+numpy
