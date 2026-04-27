@@ -47,8 +47,8 @@
       <div class="ud-bulk-actions" v-if="selectedGroups.size > 0 || allGroupsSelected">
         <span class="ud-savings-badge">
           🗑 ~{{ formatBytes(estimatedSavings) }} {{ t('dupli', 'freed') }}
-          <span v-if="protectedSkipCount > 0" class="ud-savings-protected">
-            · {{ protectedSkipCount }} 🛡 {{ t('dupli', 'kept') }}
+          <span v-if="protectedSkipCount !== 0" class="ud-savings-protected">
+            · {{ protectedSkipCount === -1 ? '🛡 ' + t('dupli', 'protected files kept') : protectedSkipCount + ' 🛡 ' + t('dupli', 'kept') }}
           </span>
         </span>
         <div v-if="rules && rules.length > 0" class="ud-keep-folder-row">
@@ -73,6 +73,14 @@
     <div v-if="deleting" class="ud-deleting-overlay">
       <NcLoadingIcon :size="48" />
       <p>{{ t('dupli', 'Deleting duplicates, please wait…') }}</p>
+      <div v-if="bulkTotal > 0" class="ud-bulk-progress">
+        <div class="ud-bulk-progress__bar">
+          <div class="ud-bulk-progress__fill" :style="{ width: (bulkProgress / bulkTotal * 100) + '%' }"></div>
+        </div>
+        <div class="ud-bulk-progress__text">
+          {{ bulkProgress }} / {{ bulkTotal }} {{ t('dupli', 'groups processed') }} · {{ bulkDeletedCount }} {{ t('dupli', 'files deleted') }}
+        </div>
+      </div>
     </div>
     <div v-if="deleteResult && !deleting" class="ud-delete-result">
       ✅ {{ deleteResult.deleted }} {{ t('dupli', 'files deleted') }}
@@ -121,9 +129,9 @@
             <span>{{ t('dupli', 'Storage freed') }}</span>
             <strong class="ud-savings-amount">~{{ formatBytes(estimatedSavings) }}</strong>
           </div>
-          <div class="ud-confirm-row" v-if="protectedSkipCount > 0">
+          <div class="ud-confirm-row" v-if="protectedSkipCount !== 0">
             <span>🛡 {{ t('dupli', 'Protected files kept') }}</span>
-            <strong>{{ protectedSkipCount }}</strong>
+            <strong>{{ protectedSkipCount === -1 ? t('dupli', 'Protected files will be kept') : protectedSkipCount }}</strong>
           </div>
           <div class="ud-confirm-row" v-if="deleteProtectedFor.length > 0">
             <span>⚠️ {{ t('dupli', 'Groups where protected duplicates will be reduced') }}</span>
@@ -163,6 +171,9 @@ export default {
       allGroupsSelected: false,
       allSelectedIds: [],
       deleteProtectedFor: [],
+      bulkProgress: 0,
+      bulkTotal: 0,
+      bulkDeletedCount: 0,
       deleteUnprotectedAndKeepOne: false,
       keepFromFolder: '',
       filterPattern: '',
@@ -243,6 +254,9 @@ export default {
       return total
     },
     protectedSkipCount() {
+      // When all groups selected, we only have current page loaded
+      // so return -1 as a signal to show "some" instead of a wrong number
+      if (this.allGroupsSelected) return -1
       let count = 0
       for (const group of this.selectedGroupsData) {
         const protectedFiles = (group.files || []).filter(f => f.protected)
@@ -369,6 +383,9 @@ export default {
           ? this.activeGroupIds
           : this.deleteProtectedFor
 
+        this.bulkTotal = this.activeGroupIds.length
+        this.bulkProgress = 0
+        this.bulkDeletedCount = 0
         const res = await this.$store.dispatch('bulkDelete', {
           taskId: this.id,
           groupIds: this.activeGroupIds,
@@ -376,6 +393,11 @@ export default {
           deleteUnprotectedAndKeepOne: this.deleteUnprotectedAndKeepOne,
           keepFromFolder: this.keepFromFolder,
           filterPattern: this.activeFilter,
+          onProgress: (done, total, deleted) => {
+            this.bulkProgress = done
+            this.bulkTotal = total
+            this.bulkDeletedCount = deleted
+          },
         })
         if (res) this.deleteResult = res
       } catch (e) {
@@ -388,7 +410,7 @@ export default {
         this.deleteProtectedFor = []
         this.deleteUnprotectedAndKeepOne = false
         this.keepFromFolder = ''
-        await this.getGroups(this.id)
+        await this.getGroups({ taskId: this.id, filter: this.activeFilter })
       }
     },
 
@@ -475,4 +497,28 @@ export default {
 }
 .ud-keep-folder-label { display: flex; align-items: center; gap: 6px; font-size: 0.85em; cursor: pointer; }
 .ud-keep-folder-select { font-size: 0.85em; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-main-background); }
+.ud-bulk-progress {
+  width: 100%;
+  max-width: 400px;
+  margin-top: 16px;
+}
+.ud-bulk-progress__bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ud-bulk-progress__fill {
+  height: 100%;
+  background: var(--color-primary-element);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.ud-bulk-progress__text {
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: var(--color-main-text);
+  text-align: center;
+}
 </style>

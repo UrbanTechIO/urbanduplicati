@@ -94,9 +94,9 @@ const actions = {
       showSuccess('File deleted')
     } catch(e) { showError('Failed to delete file') }
   },
-  async bulkDelete({ commit }, { taskId, groupIds, deleteProtectedFor = [], deleteUnprotectedAndKeepOne = false, keepFromFolder = '', filterPattern = '' }) {
+  async bulkDelete({ commit }, { taskId, groupIds, deleteProtectedFor = [], deleteUnprotectedAndKeepOne = false, keepFromFolder = '', filterPattern = '', onProgress = null }) {
     try {
-      const BATCH_SIZE = 200
+      const BATCH_SIZE = 20
       let totalDeleted = 0
       let totalSkipped = 0
       for (let i = 0; i < groupIds.length; i += BATCH_SIZE) {
