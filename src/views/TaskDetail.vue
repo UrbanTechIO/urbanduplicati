@@ -62,6 +62,12 @@
               {{ rule.label || rule.path }}
             </option>
           </select>
+        <div class="ud-option-row" v-if="hasSelection">
+          <label>
+            <input type="checkbox" v-model="selectAllProtected" @change="onSelectAllProtected" />
+            {{ t('dupli', 'Delete all but one protected copy in every selected group') }}
+          </label>
+        </div>
         </div>
         <NcButton type="secondary" @click="doRemove">{{ t('dupli', 'Remove from list') }}</NcButton>
         <NcButton type="error" @click="showConfirm = true">
@@ -175,6 +181,8 @@ export default {
       bulkTotal: 0,
       bulkDeletedCount: 0,
       deleteUnprotectedAndKeepOne: false,
+      selectAllProtected: false,
+      selectAllProtected: false,
       keepFromFolder: '',
       filterPattern: '',
       activeFilter: '', // group IDs where user opted to also delete protected duplicates
@@ -278,6 +286,7 @@ export default {
       this.allGroupsSelected = false
       this.allSelectedIds = []
       this.deleteProtectedFor = []
+      this.selectAllProtected = false
       await this.getTask(this.id)
       await this.getGroups({ taskId: this.id, filter: this.activeFilter })
       if (!this.rules || !this.rules.length) await this.getRules()
@@ -310,6 +319,13 @@ export default {
       }
     },
 
+    onSelectAllProtected() {
+      if (this.selectAllProtected) {
+        this.deleteProtectedFor = [...this.activeGroupIds]
+      } else {
+        this.deleteProtectedFor = []
+      }
+    },
     async selectAllPages() {
       try {
         const res = await axios.get(generateUrl(`/apps/urbanduplicati/api/v1/tasks/${this.id}/all-group-ids`) + (this.activeFilter ? `?filter=${encodeURIComponent(this.activeFilter)}` : ''))
@@ -408,6 +424,7 @@ export default {
         this.$store.commit('setPage', 0)
         this.clearAllSelection()
         this.deleteProtectedFor = []
+        this.selectAllProtected = false
         this.deleteUnprotectedAndKeepOne = false
         this.keepFromFolder = ''
         await this.getGroups({ taskId: this.id, filter: this.activeFilter })

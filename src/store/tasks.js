@@ -112,6 +112,7 @@ const actions = {
           totalDeleted += res.data.deleted || 0
           totalSkipped += res.data.skipped || 0
         }
+        if (onProgress) onProgress(Math.min(i + BATCH_SIZE, groupIds.length), groupIds.length, totalDeleted)
       }
       commit('clearSelection')
       showSuccess('Duplicates deleted')
