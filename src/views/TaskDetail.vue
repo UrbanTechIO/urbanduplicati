@@ -62,8 +62,8 @@
               {{ rule.label || rule.path }}
             </option>
           </select>
-        <div class="ud-option-row" v-if="hasSelection">
-          <label>
+        <div style="display:block; width:100%; margin-top:8px;" v-if="activeGroupIds.length > 0">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
             <input type="checkbox" v-model="selectAllProtected" @change="onSelectAllProtected" />
             {{ t('dupli', 'Delete all but one protected copy in every selected group') }}
           </label>
@@ -181,7 +181,6 @@ export default {
       bulkTotal: 0,
       bulkDeletedCount: 0,
       deleteUnprotectedAndKeepOne: false,
-      selectAllProtected: false,
       selectAllProtected: false,
       keepFromFolder: '',
       filterPattern: '',
