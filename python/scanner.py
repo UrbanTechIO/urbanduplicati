@@ -158,6 +158,25 @@ def hash_image(disk_path: str, algo: str, hash_size: int, exif_transpose: bool):
         return None
 
 
+
+def hash_video(disk_path, algo, hash_size):
+    import subprocess, tempfile
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp_path = tmp.name
+        for seek in ["1", "0"]:
+            r = subprocess.run(["ffmpeg", "-y", "-ss", seek, "-i", disk_path, "-frames:v", "1", "-q:v", "2", tmp_path], capture_output=True, timeout=30)
+            if r.returncode == 0 and os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 0:
+                break
+        if os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 0:
+            img = Image.open(tmp_path).convert("RGB")
+            h = get_hash_fn(algo)(img, hash_size=hash_size)
+            os.unlink(tmp_path)
+            return h
+    except Exception as e:
+        log.warning("Failed to hash video %s: %s", disk_path, e)
+    return None
+
 def find_duplicates(files: list[dict], task_settings: dict) -> list[list[dict]]:
     """
     Hash all files and group duplicates by hamming distance <= threshold.
@@ -178,7 +197,8 @@ def find_duplicates(files: list[dict], task_settings: dict) -> list[list[dict]]:
         h = None
         if f['mime_part'] == 'image':
             h = hash_image(f['disk_path'], algo, hash_size, exif)
-        # video hashing: skip for now (requires ffmpeg), treat as no hash
+        elif f['mime_part'] == 'video':
+            h = hash_video(f['disk_path'], algo, hash_size)
         if h is not None:
             hashed.append((h, f))
 
