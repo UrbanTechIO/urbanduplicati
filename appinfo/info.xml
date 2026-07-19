@@ -1,3 +1,5 @@
+here is the info file content
+add them and provide it back
 <?xml version="1.0"?>
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
   <id>urbanduplicati</id>
@@ -5,9 +7,7 @@
   <summary>Find and remove duplicate photos and videos</summary>
   <description><![CDATA[
 Dupli scans your Nextcloud media library and finds duplicate photos and videos using perceptual hashing algorithms.
-
 ## Features
-
 - **Perceptual hash detection** — finds visually similar images even if filenames differ (dHash, pHash, wHash)
 - **Bulk delete** — delete hundreds of duplicates at once with one click
 - **Filename filter** — filter duplicate groups by glob pattern (e.g. `IMG*`, `*.jpg`)
@@ -17,13 +17,11 @@ Dupli scans your Nextcloud media library and finds duplicate photos and videos u
 - **Storage savings preview** — see exactly how much storage will be freed before confirming
 - **Audit log** — full history of all deletions with CSV export
 - **Inline image preview** — side-by-side thumbnail comparison of duplicate files
-
 ## Requirements
-
 - Nextcloud 25 or higher
 - Python 3 with `imagehash`, `Pillow`, `numpy`, `pymysql` packages
   ]]></description>
-  <version>1.1.6</version>
+  <version>1.1.7</version>
   <licence>agpl</licence>
   <author homepage="https://github.com/UrbanTechIO">UrbanTechIO</author>
   <namespace>UrbanDuplicati</namespace>
