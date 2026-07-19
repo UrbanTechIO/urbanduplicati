@@ -2,15 +2,45 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
   <id>urbanduplicati</id>
   <name>Dupli</name>
-  <summary>Duplicate media finder</summary>
-  <description>Find and remove duplicate photos and videos in your Nextcloud.</description>
-  <version>1.1.5</version>
+  <summary>Find and remove duplicate photos and videos</summary>
+  <description><![CDATA[
+Dupli scans your Nextcloud media library and finds duplicate photos and videos using perceptual hashing algorithms.
+
+## Features
+
+- **Perceptual hash detection** — finds visually similar images even if filenames differ (dHash, pHash, wHash)
+- **Bulk delete** — delete hundreds of duplicates at once with one click
+- **Filename filter** — filter duplicate groups by glob pattern (e.g. `IMG*`, `*.jpg`)
+- **Folder protection rules** — mark folders as protected to prevent accidental deletion
+- **Keep-from-folder** — when handling protected duplicates, choose which folder to keep
+- **Select all across pages** — select all duplicate groups across all pages in one click
+- **Storage savings preview** — see exactly how much storage will be freed before confirming
+- **Audit log** — full history of all deletions with CSV export
+- **Inline image preview** — side-by-side thumbnail comparison of duplicate files
+
+## Requirements
+
+- Nextcloud 25 or higher
+- Python 3 with `imagehash`, `Pillow`, `numpy`, `pymysql` packages
+  ]]></description>
+  <version>1.1.6</version>
   <licence>agpl</licence>
   <author homepage="https://github.com/UrbanTechIO">UrbanTechIO</author>
   <namespace>UrbanDuplicati</namespace>
   <category>tools</category>
   <bugs>https://github.com/UrbanTechIO/urbanduplicati/issues</bugs>
-  <dependencies><nextcloud min-version="25" max-version="33"/></dependencies>
-  <navigations><navigation><name>Dupli</name><route>urbanduplicati.page.index</route><order>98</order></navigation></navigations>
-  <settings><admin>OCA\UrbanDuplicati\Settings\Admin</admin></settings>
+  <repository>https://github.com/UrbanTechIO/urbanduplicati</repository>
+  <dependencies>
+    <nextcloud min-version="25" max-version="33"/>
+  </dependencies>
+  <navigations>
+    <navigation>
+      <name>Dupli</name>
+      <route>urbanduplicati.page.index</route>
+      <order>98</order>
+    </navigation>
+  </navigations>
+  <settings>
+    <admin>OCA\UrbanDuplicati\Settings\Admin</admin>
+  </settings>
 </info>
