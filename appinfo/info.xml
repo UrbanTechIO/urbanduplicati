@@ -16,7 +16,7 @@ Features:
 - Audit log with CSV export
 - Side-by-side thumbnail preview
   ]]></description>
-  <version>1.2.0</version>
+  <version>1.2.1</version>
   <licence>agpl</licence>
   <author homepage="https://github.com/UrbanTechIO">UrbanTechIO</author>
   <namespace>UrbanDuplicati</namespace>
@@ -31,9 +31,11 @@ Features:
   <screenshot small-thumbnail="https://raw.githubusercontent.com/UrbanTechIO/urbanduplicati/main/img/Screenshot%202026-03-31%20165145.png">https://raw.githubusercontent.com/UrbanTechIO/urbanduplicati/main/img/Screenshot%202026-03-31%20165145.png</screenshot>
   <screenshot small-thumbnail="https://raw.githubusercontent.com/UrbanTechIO/urbanduplicati/main/img/Screenshot%202026-03-31%20165219.png">https://raw.githubusercontent.com/UrbanTechIO/urbanduplicati/main/img/Screenshot%202026-03-31%20165219.png</screenshot>
   <dependencies>
-    <command>python3</command>
     <nextcloud min-version="25" max-version="35"/>
   </dependencies>
+  <settings>
+    <admin>OCA\UrbanDuplicati\Settings\Admin</admin>
+  </settings>
   <navigations>
     <navigation>
       <name>Dupli</name>
@@ -41,7 +43,4 @@ Features:
       <order>98</order>
     </navigation>
   </navigations>
-  <settings>
-    <admin>OCA\UrbanDuplicati\Settings\Admin</admin>
-  </settings>
 </info>

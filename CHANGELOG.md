@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 - 2026-10-12
+### Fixed
+- `info.xml` now validates against the Nextcloud App Store schema: removed the unsupported `<command>python3</command>` element (the dependency banner still checks for Python at runtime) and fixed the order of `<settings>` / `<navigations>`
+
 ## 1.2.0 - 2026-10-12
 ### Added
 - Dependency check: a banner lists missing server components (Python 3, Pillow, NumPy, PyMySQL, ImageHash, optional pillow-heif and FFmpeg) with links and the install command
@@ -9,7 +13,7 @@
 
 ### Changed
 - New scans are refused with a clear error (HTTP 412) when required components are missing, instead of staying "pending" forever
-- `info.xml` declares `python3` as a required command; supports Nextcloud 25 to 35
+- `info.xml` supports Nextcloud 25 to 35
 
 ### Fixed
 - Scans stuck at "pending" after a Nextcloud image update wiped the Python packages
