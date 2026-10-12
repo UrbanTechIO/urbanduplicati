@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.0 - 2026-10-12
+### Added
+- Dependency check: a banner lists missing server components (Python 3, Pillow, NumPy, PyMySQL, ImageHash, optional pillow-heif and FFmpeg) with links and the install command
+- `GET /api/v1/dependencies` endpoint reporting the status of each component
+- Database migration that creates the app tables on fresh installs (contributed by @Nuhser)
+- README requirements table and Docker guidance
+
+### Changed
+- New scans are refused with a clear error (HTTP 412) when required components are missing, instead of staying "pending" forever
+- `info.xml` declares `python3` as a required command; supports Nextcloud 25 to 35
+
+### Fixed
+- Scans stuck at "pending" after a Nextcloud image update wiped the Python packages
+- Removed a leftover debug file from the package
+
 ## 1.1.3 - 2026-05-13
 ### Added
 - Per-file selection checkboxes inside each duplicate group card with "Delete X selected" button for manual precise cleanup

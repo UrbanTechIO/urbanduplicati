@@ -2,3 +2,4 @@ Pillow
 imagehash
 PyMySQL
 numpy
+pillow-heif

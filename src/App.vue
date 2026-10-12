@@ -21,14 +21,16 @@
       </template>
     </NcAppNavigation>
     <NcAppContent>
+      <DependencyBanner />
       <router-view />
     </NcAppContent>
   </NcContent>
 </template>
 <script>
 import { NcContent, NcAppNavigation, NcAppNavigationItem, NcAppContent } from '@nextcloud/vue'
+import DependencyBanner from './components/DependencyBanner.vue'
 export default {
   name: 'UrbanDuplicati',
-  components: { NcContent, NcAppNavigation, NcAppNavigationItem, NcAppContent },
+  components: { DependencyBanner, NcContent, NcAppNavigation, NcAppNavigationItem, NcAppContent },
 }
 </script>

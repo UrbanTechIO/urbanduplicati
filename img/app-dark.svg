@@ -1,6 +1,13 @@
-<svg viewBox="0 0 32 32" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
-  <rect x="10" y="4" width="18" height="18" rx="2.5" fill="none" stroke="#3c3c3c" stroke-width="1.5" opacity="0.45"/>
-  <rect x="4" y="10" width="18" height="18" rx="2.5" fill="none" stroke="#3c3c3c" stroke-width="1.5"/>
-  <circle cx="9" cy="15" r="2" fill="#3c3c3c"/>
-  <path d="M4 24 L9 18 L13 22 L17 16 L22 28 L4 28 Z" fill="#3c3c3c"/>
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Back photo frame — the "duplicate" copy, offset top-right, dimmed -->
+  <rect x="12" y="3" width="17" height="17" rx="2.5" fill="none" stroke="#3B4045" stroke-width="1.5" opacity="0.38"/>
+  <!-- Front photo frame — the "original" copy -->
+  <rect x="3" y="12" width="17" height="17" rx="2.5" fill="none" stroke="#3B4045" stroke-width="1.5"/>
+  <!-- Sun inside front frame -->
+  <circle cx="7.5" cy="16.5" r="1.7" fill="#3B4045"/>
+  <!-- Mountain landscape inside front frame -->
+  <path d="M3.5 27.5 L7.5 21 L11 24.5 L15 18 L20 27.5 Z" fill="#3B4045"/>
+  <!-- Small loupe (magnifying glass) — scan indicator, bottom-right corner -->
+  <circle cx="25.5" cy="25.5" r="4" fill="none" stroke="#3B4045" stroke-width="1.6" opacity="0.9"/>
+  <line x1="28.3" y1="28.3" x2="30.5" y2="30.5" stroke="#3B4045" stroke-width="1.8" stroke-linecap="round" opacity="0.9"/>
 </svg>

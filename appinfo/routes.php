@@ -2,6 +2,7 @@
 return [
   'routes' => [
     ['name' => 'page#index',      'url' => '/',                                              'verb' => 'GET'],
+    ['name' => 'dependency#index', 'url' => '/api/v1/dependencies', 'verb' => 'GET'],
     ['name' => 'page#admin',      'url' => '/admin',                                         'verb' => 'GET'],
     ['name' => 'task#index',      'url' => '/api/v1/tasks',                                  'verb' => 'GET'],
     ['name' => 'task#run',        'url' => '/api/v1/tasks/run',                              'verb' => 'POST'],

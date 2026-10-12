@@ -78,7 +78,7 @@
 
     <div v-if="deleting" class="ud-deleting-overlay">
       <NcLoadingIcon :size="48" />
-      <p>{{ stopRequested ? t('dupli', 'Stopping after current batch…') : t('dupli', 'Deleting duplicates, please wait…') }}</p>
+      <p>{{ t('dupli', 'Deleting duplicates, please wait…') }}</p>
       <div v-if="bulkTotal > 0" class="ud-bulk-progress">
         <div class="ud-bulk-progress__bar">
           <div class="ud-bulk-progress__fill" :style="{ width: (bulkProgress / bulkTotal * 100) + '%' }"></div>
@@ -87,16 +87,10 @@
           {{ bulkProgress }} / {{ bulkTotal }} {{ t('dupli', 'groups processed') }} · {{ bulkDeletedCount }} {{ t('dupli', 'files deleted') }}
         </div>
       </div>
-      <button class="ud-stop-btn" :disabled="stopRequested" @click="stopRequested = true">
-        {{ stopRequested ? t('dupli', 'Stopping…') : ('⏹ ' + t('dupli', 'Stop')) }}
-      </button>
     </div>
     <div v-if="deleteResult && !deleting" class="ud-delete-result">
       ✅ {{ deleteResult.deleted }} {{ t('dupli', 'files deleted') }}
       <span v-if="deleteResult.skipped > 0"> · {{ deleteResult.skipped }} {{ t('dupli', 'skipped') }}</span>
-      <span v-if="deleteResult.conflicts && deleteResult.conflicts.length > 0" class="ud-conflict-badge">
-        · ⚠️ {{ deleteResult.conflicts.length }} {{ t('dupli', 'conflicts need review') }}
-      </span>
       <button class="ud-link-btn" @click="deleteResult = null">✕</button>
     </div>
     <div v-show="!deleting">
@@ -161,45 +155,6 @@
         </div>
       </div>
     </NcModal>
-
-    <!-- Rule 4: Conflict resolution modal -->
-    <NcModal v-if="currentConflict" @closing="skipConflict">
-      <div class="ud-modal-content ud-conflict-modal">
-        <h3>⚠️ {{ t('dupli', 'Conflict') }} — {{ t('dupli', 'Group') }} {{ currentConflict.group_id }}</h3>
-        <p class="ud-conflict-desc">
-          {{ t('dupli', 'The largest unprotected file is bigger than the largest protected file. Choose which file to keep — all others will be permanently deleted.') }}
-        </p>
-        <p class="ud-conflict-progress">
-          {{ conflictIndex + 1 }} / {{ conflicts.length }}
-        </p>
-
-        <div class="ud-conflict-files">
-          <label
-            v-for="file in currentConflict.files"
-            :key="file.id"
-            :class="['ud-conflict-file', { 'ud-conflict-file--protected': file.protected, 'ud-conflict-file--selected': conflictKeepFileId === file.id }]">
-            <input type="radio" :value="file.id" v-model="conflictKeepFileId" />
-            <img
-              :src="conflictThumb(file.fileid)"
-              class="ud-conflict-thumb"
-              @error="e => e.target.style.display='none'" />
-            <div class="ud-conflict-file-info">
-              <div class="ud-conflict-file-name" :title="file.filename">{{ file.filename }}</div>
-              <div class="ud-conflict-file-path">{{ shortPath(file.filepath) }}</div>
-              <div class="ud-conflict-file-size">{{ formatBytes(file.filesize) }}</div>
-              <span v-if="file.protected" class="ud-conflict-protected-tag">🛡 {{ t('dupli', 'Protected') }}</span>
-            </div>
-          </label>
-        </div>
-
-        <div class="ud-form-actions">
-          <NcButton @click="skipConflict">{{ t('dupli', 'Skip this group') }}</NcButton>
-          <NcButton type="error" :disabled="!conflictKeepFileId || resolvingConflict" @click="resolveConflict">
-            {{ resolvingConflict ? t('dupli', 'Deleting…') : t('dupli', 'Keep selected & delete others') }}
-          </NcButton>
-        </div>
-      </div>
-    </NcModal>
   </div>
 </template>
 
@@ -229,14 +184,7 @@ export default {
       selectAllProtected: false,
       keepFromFolder: '',
       filterPattern: '',
-      activeFilter: '',
-      // Rule 4: conflict resolution state
-      conflicts: [],
-      conflictIndex: 0,
-      conflictKeepFileId: null,
-      resolvingConflict: false,
-      // Stop button
-      stopRequested: false,
+      activeFilter: '', // group IDs where user opted to also delete protected duplicates
     }
   },
   computed: {
@@ -259,17 +207,15 @@ export default {
       if (this.allGroupsSelected) return this.groups
       return this.groups.filter(g => this.selectedGroups.has(g.group_id))
     },
-    // Rule 4: current conflict being resolved
-    currentConflict() {
-      if (!this.conflicts.length || this.conflictIndex >= this.conflicts.length) return null
-      return this.conflicts[this.conflictIndex]
-    },
     estimatedSavings() {
       if (!this.selectedGroups.size && !this.allGroupsSelected) return 0
 
+      // Strip mount prefix from keepFromFolder
+      // e.g. "/Pictures/Dima/iPhone13/Camera" -> "Dima/iPhone13/Camera"
       const stripMount = (path) => {
         if (!path) return ''
         const parts = path.replace(/^\/+/, '').split('/')
+        // First segment is the mount point name, strip it
         return parts.slice(1).join('/')
       }
       const keepPath = stripMount(this.keepFromFolder)
@@ -290,18 +236,24 @@ export default {
         const unprotected = files.filter(f => !f.protected)
         const protected_ = files.filter(f => f.protected)
 
+        // All unprotected files get deleted
         total += unprotected.reduce((s, f) => s + Number(f.filesize || 0), 0)
 
+        // If keep-from-folder is set, delete protected files NOT in the keep folder
+        // and keep files IN the keep folder (keep one if duplicates exist there too)
         if (this.deleteUnprotectedAndKeepOne && this.keepFromFolder && protected_.length >= 1) {
           const inKeep = protected_.filter(f => matchesKeep(f.filepath))
           const notInKeep = protected_.filter(f => !matchesKeep(f.filepath))
+          // Delete all files not in keep folder
           total += notInKeep.reduce((s, f) => s + Number(f.filesize || 0), 0)
+          // If multiple files in keep folder, keep one, delete rest
           if (inKeep.length > 1) {
             total += inKeep.slice(1).reduce((s, f) => s + Number(f.filesize || 0), 0)
           }
         }
       }
 
+      // Scale if all pages selected (approximate)
       if (this.allGroupsSelected && this.totals && this.groups.length > 0) {
         const ratio = Number(this.totals.groupstotal) / this.groups.length
         total = Math.round(total * ratio)
@@ -309,14 +261,16 @@ export default {
       return total
     },
     protectedSkipCount() {
+      // When all groups selected, we only have current page loaded
+      // so return -1 as a signal to show "some" instead of a wrong number
       if (this.allGroupsSelected) return -1
       let count = 0
       for (const group of this.selectedGroupsData) {
         const protectedFiles = (group.files || []).filter(f => f.protected)
         if (this.deleteProtectedFor.includes(group.group_id)) {
-          count += 1
+          count += 1 // keeping 1
         } else {
-          count += protectedFiles.length
+          count += protectedFiles.length // keeping all
         }
       }
       return count
@@ -371,7 +325,6 @@ export default {
         this.deleteProtectedFor = []
       }
     },
-
     async selectAllPages() {
       try {
         const res = await axios.get(generateUrl(`/apps/urbanduplicati/api/v1/tasks/${this.id}/all-group-ids`) + (this.activeFilter ? `?filter=${encodeURIComponent(this.activeFilter)}` : ''))
@@ -440,6 +393,7 @@ export default {
       this.deleteResult = null
       try {
         console.log('bulkDelete groupIds:', this.activeGroupIds, 'length:', this.activeGroupIds.length)
+        // When global keep-from-folder is active, treat ALL groups as opted-in for protected deletion
         const effectiveDeleteProtectedFor = this.deleteUnprotectedAndKeepOne && this.keepFromFolder
           ? this.activeGroupIds
           : this.deleteProtectedFor
@@ -447,7 +401,6 @@ export default {
         this.bulkTotal = this.activeGroupIds.length
         this.bulkProgress = 0
         this.bulkDeletedCount = 0
-        this.stopRequested = false
         const res = await this.$store.dispatch('bulkDelete', {
           taskId: this.id,
           groupIds: this.activeGroupIds,
@@ -460,17 +413,8 @@ export default {
             this.bulkTotal = total
             this.bulkDeletedCount = deleted
           },
-          shouldStop: () => this.stopRequested,
         })
-        if (res) {
-          this.deleteResult = res
-          // Rule 4: if there are conflicts, start resolution flow
-          if (res.conflicts && res.conflicts.length > 0) {
-            this.conflicts = res.conflicts
-            this.conflictIndex = 0
-            this.conflictKeepFileId = null
-          }
-        }
+        if (res) this.deleteResult = res
       } catch (e) {
         console.error('Bulk delete error:', e)
       } finally {
@@ -482,52 +426,7 @@ export default {
         this.selectAllProtected = false
         this.deleteUnprotectedAndKeepOne = false
         this.keepFromFolder = ''
-        this.stopRequested = false
         await this.getGroups({ taskId: this.id, filter: this.activeFilter })
-      }
-    },
-
-    // ── Rule 4: Conflict resolution ──────────────────────────────────────────
-
-    conflictThumb(fileId) {
-      return generateUrl('/core/preview?fileId=' + fileId + '&x=120&y=120&a=1&forceIcon=0')
-    },
-
-    skipConflict() {
-      this.conflictIndex++
-      this.conflictKeepFileId = null
-      if (this.conflictIndex >= this.conflicts.length) {
-        this.conflicts = []
-        this.conflictIndex = 0
-      }
-    },
-
-    async resolveConflict() {
-      if (!this.conflictKeepFileId || this.resolvingConflict) return
-      this.resolvingConflict = true
-      try {
-        const conflict = this.currentConflict
-        // Delete every file in this group EXCEPT the chosen one
-        for (const file of conflict.files) {
-          if (file.id === this.conflictKeepFileId) continue
-          try {
-            await axios.delete(
-              generateUrl(`/apps/urbanduplicati/api/v1/tasks/${conflict.task_id}/groups/${conflict.group_id}/files/${file.id}`) + '?force_delete=1'
-            )
-          } catch (e) {
-            console.warn('Could not delete file in conflict resolution:', file.id, e)
-          }
-        }
-        // Advance to next conflict
-        this.conflictIndex++
-        this.conflictKeepFileId = null
-        if (this.conflictIndex >= this.conflicts.length) {
-          this.conflicts = []
-          this.conflictIndex = 0
-          await this.getGroups({ taskId: this.id, filter: this.activeFilter })
-        }
-      } finally {
-        this.resolvingConflict = false
       }
     },
 
@@ -537,11 +436,6 @@ export default {
       if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB'
       if (b >= 1024) return Math.round(b / 1024) + ' KB'
       return b + ' B'
-    },
-    shortPath(p) {
-      if (!p) return ''
-      const parts = p.split('/').filter(Boolean)
-      return parts.length > 3 ? '…/' + parts.slice(-2).join('/') : p
     },
   },
 }
@@ -613,7 +507,6 @@ export default {
   border: 1px solid #46ba61; border-radius: 10px; margin-bottom: 12px;
   font-weight: 500; color: #46ba61;
 }
-.ud-conflict-badge { color: #f8a800; font-weight: 600; }
 .ud-keep-folder-row {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   width: 100%; padding: 8px 0; border-top: 1px solid var(--color-border); margin-top: 4px;
@@ -621,65 +514,27 @@ export default {
 .ud-keep-folder-label { display: flex; align-items: center; gap: 6px; font-size: 0.85em; cursor: pointer; }
 .ud-keep-folder-select { font-size: 0.85em; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-main-background); }
 .ud-bulk-progress {
-  width: 100%; max-width: 400px; margin-top: 16px;
+  width: 100%;
+  max-width: 400px;
+  margin-top: 16px;
 }
 .ud-bulk-progress__bar {
-  width: 100%; height: 8px; background: rgba(255,255,255,0.2);
-  border-radius: 4px; overflow: hidden;
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+  overflow: hidden;
 }
 .ud-bulk-progress__fill {
-  height: 100%; background: var(--color-primary-element);
-  border-radius: 4px; transition: width 0.3s ease;
+  height: 100%;
+  background: var(--color-primary-element);
+  border-radius: 4px;
+  transition: width 0.3s ease;
 }
 .ud-bulk-progress__text {
-  margin-top: 8px; font-size: 0.85em;
-  color: var(--color-main-text); text-align: center;
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: var(--color-main-text);
+  text-align: center;
 }
-.ud-stop-btn {
-  margin-top: 16px; padding: 8px 28px;
-  border-radius: 8px; border: 2px solid var(--color-error);
-  background: transparent; color: var(--color-error);
-  font-size: 0.95em; font-weight: 700; cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.ud-stop-btn:hover:not(:disabled) { background: var(--color-error); color: #fff; }
-.ud-stop-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Rule 4: Conflict resolution modal */
-.ud-conflict-modal { max-width: 680px; }
-.ud-conflict-desc {
-  font-size: 0.9em; color: var(--color-text-maxcontrast);
-  margin: 0 0 8px; line-height: 1.5;
-}
-.ud-conflict-progress {
-  font-size: 0.82em; color: var(--color-text-maxcontrast);
-  margin: 0 0 16px; font-weight: 600;
-}
-.ud-conflict-files {
-  display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
-}
-.ud-conflict-file {
-  display: flex; flex-direction: column; align-items: center;
-  width: 140px; border: 2px solid var(--color-border);
-  border-radius: 8px; overflow: hidden; cursor: pointer;
-  background: var(--color-background-dark); padding-bottom: 8px;
-  transition: border-color 0.15s;
-}
-.ud-conflict-file input[type="radio"] { margin: 8px 0 4px; }
-.ud-conflict-file--protected { border-color: #f8a800; }
-.ud-conflict-file--selected { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-element-light); }
-.ud-conflict-thumb {
-  width: 120px; height: 100px; object-fit: cover; border-radius: 4px;
-}
-.ud-conflict-file-info { padding: 4px 6px; text-align: center; width: 100%; }
-.ud-conflict-file-name {
-  font-size: 0.75em; font-weight: 600; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;
-}
-.ud-conflict-file-path {
-  font-size: 0.65em; color: var(--color-text-maxcontrast);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.ud-conflict-file-size { font-size: 0.7em; color: var(--color-text-maxcontrast); }
-.ud-conflict-protected-tag { font-size: 0.65em; color: #f8a800; font-weight: 600; }
 </style>

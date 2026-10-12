@@ -97,6 +97,14 @@ class TaskController extends Controller {
      * @NoAdminRequired
      */
     public function run(): JSONResponse {
+        $deps = \OCP\Server::get(\OCA\UrbanDuplicati\Service\DependencyChecker::class)->check();
+        if (!$deps['ok']) {
+            return new JSONResponse([
+                'success' => false,
+                'error'   => 'Missing required server components: ' . implode(', ', $deps['missing']),
+                'missing' => $deps['missing'],
+            ], 412);
+        }
         $uid      = $this->uid();
         $data     = $this->request->getParams();
         $dirs     = json_decode($data['targetDirectoryIds'] ?? '[]', true) ?: [];
@@ -328,23 +336,21 @@ class TaskController extends Controller {
             return new JSONResponse(['error' => 'File is protected'], 403);
         }
 
-        // Bypass trash bin so large files are permanently deleted, not slowly copied to trash
-        if (class_exists('\OCA\Files_Trashbin\Events\MoveToTrashEvent')) {
-            try {
-                $dispatcher = \OC::$server->get(\OCP\EventDispatcher\IEventDispatcher::class);
-                $dispatcher->addListener(
-                    \OCA\Files_Trashbin\Events\MoveToTrashEvent::class,
-                    static function (\OCA\Files_Trashbin\Events\MoveToTrashEvent $event): void {
-                        $event->disableTrashBin();
-                    }
-                );
-            } catch (\Exception $e) { /* non-fatal */ }
-        }
-
         try {
+            // Initialize the legacy static Filesystem so files_trashbin can move the
+            // file to trash (Trashbin::move2trash relies on Filesystem::getView / getRoot).
+            \OC_Util::setupFS($this->uid());
             $userFolder = $this->rootFolder->getUserFolder($this->uid());
             $nodes = $userFolder->getById((int)$file['fileid']);
             if (!empty($nodes)) $nodes[0]->delete();
+        } catch (\OCP\Exceptions\AbortedEventException $e) {
+            if (str_contains($e->getMessage(), 'live photo')) {
+                return new JSONResponse([
+                    'error'   => 'live_photo',
+                    'message' => 'This file is the video part of a Live Photo and cannot be deleted independently.',
+                ], 409);
+            }
+            return new JSONResponse(['error' => $e->getMessage()], 500);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
@@ -393,11 +399,10 @@ class TaskController extends Controller {
         // No execution time limit — large video files can take a long time to delete
         set_time_limit(0);
 
-        // Bypass trash bin for all deletes in this request.
-        // Without this, the trash bin tries to COPY each file before deleting,
-        // causing 100+ second timeouts for large videos (Cloudflare 524) and failures.
-        // Bulk-deleted duplicates are permanently deleted — they've already been reviewed.
-        if (class_exists('\OCA\Files_Trashbin\Events\MoveToTrashEvent')) {
+        // Optionally bypass the trash bin (needed for large video files on network storage
+        // to avoid 100+ second trash-copy timeouts). Off by default so files go to trash.
+        $bypassTrash = filter_var($this->request->getParam('bypass_trash', false), FILTER_VALIDATE_BOOLEAN);
+        if ($bypassTrash && class_exists('\OCA\Files_Trashbin\Events\MoveToTrashEvent')) {
             try {
                 $dispatcher = \OC::$server->get(\OCP\EventDispatcher\IEventDispatcher::class);
                 $dispatcher->addListener(
@@ -423,10 +428,16 @@ class TaskController extends Controller {
         );
         if (!$task) return new JSONResponse(['error' => 'Not found'], 404);
 
+        // Initialize the legacy static Filesystem so files_trashbin can move files
+        // to trash (Trashbin::move2trash relies on Filesystem::getView / getRoot).
+        // Must be called once before any ->delete() in this request context.
+        \OC_Util::setupFS($this->uid());
+
         $rules = $this->getProtectionRules();
-        $deleted  = 0;
-        $skipped  = 0;
-        $conflicts = [];
+        $deleted       = 0;
+        $skipped       = 0;
+        $livePhotoSkip = 0;
+        $conflicts     = [];
 
         foreach ($groupIds as $gid) {
             $files = $this->db->fetchAll(
@@ -573,6 +584,19 @@ class TaskController extends Controller {
                         [$id, $gid, $file['filepath'].'/'.$file['filename'], $file['filesize'], 'deleted', $this->uid(), 'bulk', time()]
                     );
                     $deleted++;
+                } catch (\OCP\Exceptions\AbortedEventException $e) {
+                    if (str_contains($e->getMessage(), 'live photo')) {
+                        // Live Photo video components cannot be deleted independently —
+                        // skip silently and report the count to the frontend.
+                        $livePhotoSkip++;
+                    } else {
+                        $skipped++;
+                        \OC::$server->getLogger()->error(
+                            '[urbanduplicati] bulkDelete aborted for file ' . $file['fileid'] .
+                            ' (' . $file['filepath'] . '/' . $file['filename'] . '): ' . $e->getMessage(),
+                            ['app' => 'urbanduplicati']
+                        );
+                    }
                 } catch (\Exception $e) {
                     $skipped++;
                     \OC::$server->getLogger()->error(
@@ -594,7 +618,7 @@ class TaskController extends Controller {
             }
         }
 
-        return new JSONResponse(['success' => true, 'deleted' => $deleted, 'skipped' => $skipped, 'conflicts' => $conflicts]);
+        return new JSONResponse(['success' => true, 'deleted' => $deleted, 'skipped' => $skipped, 'live_photo_skipped' => $livePhotoSkip, 'conflicts' => $conflicts]);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
