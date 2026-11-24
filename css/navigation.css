@@ -1,0 +1,11 @@
+.ud-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 24px 0 40px;
+  padding: 12px;
+  background: var(--color-background-dark);
+  border-radius: 10px;
+}

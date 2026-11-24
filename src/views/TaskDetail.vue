@@ -468,12 +468,6 @@ export default {
 }
 .ud-savings-protected { color: #f8a800; font-weight: 400; }
 
-.ud-pagination {
-  display: flex; align-items: center; gap: 12px;
-  justify-content: center; margin: 24px 0 40px;
-  padding: 12px; background: var(--color-background-dark);
-  border-radius: 10px;
-}
 .ud-page-info { font-weight: 500; min-width: 80px; text-align: center; }
 
 .ud-modal-content { padding: 28px; min-width: 380px; }
