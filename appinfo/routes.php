@@ -2,6 +2,10 @@
 return [
   'routes' => [
     ['name' => 'page#index',      'url' => '/',                                              'verb' => 'GET'],
+    ['name' => 'page#index',      'url' => '/protection', 'verb' => 'GET', 'postfix' => 'protection'],
+    ['name' => 'page#index',      'url' => '/audit', 'verb' => 'GET', 'postfix' => 'audit'],
+    ['name' => 'page#index',      'url' => '/settings', 'verb' => 'GET', 'postfix' => 'settings'],
+    ['name' => 'page#index',      'url' => '/tasks/{id}', 'verb' => 'GET', 'postfix' => 'task', 'requirements' => ['id' => '\\d+']],
     ['name' => 'dependency#index', 'url' => '/api/v1/dependencies', 'verb' => 'GET'],
     ['name' => 'page#admin',      'url' => '/admin',                                         'verb' => 'GET'],
     ['name' => 'task#index',      'url' => '/api/v1/tasks',                                  'verb' => 'GET'],

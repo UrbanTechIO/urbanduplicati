@@ -1,0 +1,8 @@
+.ud-admin {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  overflow: auto;
+  background: var(--color-main-background);
+  border-radius: var(--border-radius-large);
+}

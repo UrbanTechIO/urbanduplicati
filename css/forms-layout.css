@@ -1,0 +1,87 @@
+.ud-form-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.ud-form-row > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ud-form-row input[type="text"],
+.ud-form-row input[type="number"],
+.ud-form-row input[type="range"],
+.ud-form-row select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+
+.ud-form-row input[type="checkbox"] {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.ud-form-row > .button-vue {
+  align-self: flex-start;
+}
+
+.ud-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ud-folder-picker-row,
+.ud-folder-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ud-folder-picker-row > input,
+.ud-folder-tag__path {
+  flex: 1;
+  min-width: 0;
+}
+
+.ud-folder-tag__path {
+  overflow-wrap: anywhere;
+}
+
+.ud-folder-picker-row > .button-vue,
+.ud-folder-tag__remove {
+  flex-shrink: 0;
+}
+
+.ud-folder-hint {
+  color: var(--color-text-maxcontrast);
+}
+
+.ud-settings-section + .ud-settings-section,
+.ud-settings-actions + .ud-settings-section {
+  margin-top: 24px;
+}
+
+.modal-container .ud-modal-content:has(.ud-form-row) {
+  box-sizing: border-box;
+  padding: 24px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ud-modal-content:has(.ud-form-row) > h3 {
+  margin: 0 0 20px;
+}

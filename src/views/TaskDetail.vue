@@ -468,12 +468,6 @@ export default {
 }
 .ud-savings-protected { color: #f8a800; font-weight: 400; }
 
-.ud-pagination {
-  display: flex; align-items: center; gap: 12px;
-  justify-content: center; margin: 24px 0 40px;
-  padding: 12px; background: var(--color-background-dark);
-  border-radius: 10px;
-}
 .ud-page-info { font-weight: 500; min-width: 80px; text-align: center; }
 
 .ud-modal-content { padding: 28px; min-width: 380px; }
@@ -483,7 +477,6 @@ export default {
 .ud-confirm-row:last-of-type { border-bottom: none; }
 .ud-savings-amount { font-size: 1.2em; color: #46ba61; }
 .ud-confirm-note { margin-top: 10px; font-size: 0.8em; color: var(--color-text-maxcontrast); font-style: italic; }
-.ud-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .ud-filter-bar {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   margin-bottom: 12px; padding: 10px 14px;

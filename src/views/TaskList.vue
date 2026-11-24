@@ -174,5 +174,4 @@ export default {
 .ud-badge--stopped  { background: #f8a800; color: #fff; }
 .ud-badge--pending  { background: var(--color-background-dark); color: var(--color-text-maxcontrast); }
 .ud-modal-content { padding: 24px; min-width: 420px; }
-.ud-form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 </style>

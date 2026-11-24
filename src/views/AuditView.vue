@@ -68,9 +68,6 @@ export default {
 .ud-page { max-width: 1000px; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
 .ud-page-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
 .ud-page-header h2 { margin: 0; font-size: 1.3em; font-weight: 600; flex: 1; }
-.ud-audit-table { width: 100%; border-collapse: collapse; }
-.ud-audit-table th,
-.ud-audit-table td { padding: 8px 16px; text-align: left; white-space: nowrap; }
 .ud-audit-table td.ud-audit-path { white-space: normal; word-break: break-all; max-width: 280px; }
 .ud-audit-table td.ud-audit-reason { white-space: normal; max-width: 160px; }
 </style>

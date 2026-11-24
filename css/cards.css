@@ -1,0 +1,15 @@
+@media (max-width: 600px) {
+  main.app-content .ud-task-item__body {
+    flex-wrap: wrap;
+  }
+
+  main.app-content .ud-task-item__center {
+    flex-basis: calc(100% - 96px);
+  }
+
+  main.app-content .ud-task-item__actions {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
