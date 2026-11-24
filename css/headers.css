@@ -1,0 +1,6 @@
+@media (max-width: 600px) {
+  main.app-content .ud-page-header {
+    flex-wrap: wrap;
+    padding-inline-start: 32px;
+  }
+}

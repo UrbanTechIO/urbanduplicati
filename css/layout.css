@@ -1,0 +1,5 @@
+@media (max-width: 600px) {
+  main.app-content .ud-page {
+    padding: 20px 16px;
+  }
+}
