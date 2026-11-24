@@ -483,7 +483,6 @@ export default {
 .ud-confirm-row:last-of-type { border-bottom: none; }
 .ud-savings-amount { font-size: 1.2em; color: #46ba61; }
 .ud-confirm-note { margin-top: 10px; font-size: 0.8em; color: var(--color-text-maxcontrast); font-style: italic; }
-.ud-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .ud-filter-bar {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   margin-bottom: 12px; padding: 10px 14px;
