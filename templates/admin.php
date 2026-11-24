@@ -6,5 +6,6 @@ style('urbanduplicati', 'navigation');
 style('urbanduplicati', 'layout');
 style('urbanduplicati', 'cards');
 style('urbanduplicati', 'headers');
+style('urbanduplicati', 'admin');
 ?>
 <div id="urbanduplicati-admin-root"></div>
